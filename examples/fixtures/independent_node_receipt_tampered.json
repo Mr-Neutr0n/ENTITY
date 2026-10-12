@@ -1,0 +1,13 @@
+{
+  "schema": "entity-independent-node/receipt/v1",
+  "receipt_id": "inp-example000000000001",
+  "event": "RECEIVE",
+  "timestamp": "2026-01-15T12:00:00+00:00",
+  "receiver_node_id": "ent-test-receiver01",
+  "sender_node_id": "ent-test-sender0001",
+  "object_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "origin_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "lineage_depth": 1,
+  "result": "PASS",
+  "receipt_sha256": "29d65d13d8f113860205ed7be4a164f1e18a7cbe11aadfa96a1e1d5cc396d786"
+}
