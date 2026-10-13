@@ -23,12 +23,16 @@ import hashlib
 import json
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
+RECEIPT_ID = re.compile(r"^inp-[0-9a-f]{32}$")
+NODE_ID = re.compile(r"^ent-test-[0-9a-f]{16}$")
 
 INP_RECEIPT_SCHEMA = "entity-independent-node/receipt/v1"
+INP_EVENTS = ("RECEIVE", "REJECT")
 INP_REQUIRED = (
     "schema",
     "receipt_id",
@@ -79,11 +83,29 @@ def verify_inp_receipt(doc: dict[str, Any]) -> list[str]:
     if failures:
         return failures
 
-    if not isinstance(doc["lineage_depth"], int) or doc["lineage_depth"] < 0:
-        failures.append("lineage_depth must be a non-negative integer")
+    if not isinstance(doc["lineage_depth"], int) or isinstance(doc["lineage_depth"], bool) \
+            or doc["lineage_depth"] < 0:
+        failures.append("lineage_depth must be a non-negative integer (booleans are not integers)")
     for field in ("object_sha256", "origin_sha256", "receipt_sha256"):
         if not isinstance(doc[field], str) or not HEX64.match(doc[field]):
             failures.append(f"{field} must be a 64-character lowercase hex SHA-256 digest")
+    if not isinstance(doc["receipt_id"], str) or not RECEIPT_ID.match(doc["receipt_id"]):
+        failures.append("receipt_id must match 'inp-<32 lowercase hex>'")
+    for field in ("receiver_node_id", "sender_node_id"):
+        if not isinstance(doc[field], str) or not NODE_ID.match(doc[field]):
+            failures.append(f"{field} must match 'ent-test-<16 lowercase hex>'")
+    if doc["event"] not in INP_EVENTS:
+        failures.append(f"event must be one of {INP_EVENTS}")
+    if not isinstance(doc["timestamp"], str):
+        failures.append("timestamp must be an ISO 8601 string")
+    else:
+        try:
+            parsed = datetime.fromisoformat(doc["timestamp"])
+        except ValueError:
+            failures.append("timestamp must be a parseable ISO 8601 string")
+        else:
+            if parsed.tzinfo is None:
+                failures.append("timestamp must carry a UTC offset")
 
     declared = doc.get("receipt_sha256")
     body = {k: v for k, v in doc.items() if k != "receipt_sha256"}
@@ -133,7 +155,9 @@ def main(argv: list[str] | None = None) -> int:
 
     print("PASS: structural and self-hash checks succeeded")
     print(
-        "note: this tool does not verify signatures, runtime state, or external-world truth.",
+        "note: a matching self-hash only proves the file was not altered since it was written; "
+        "anyone can recompute it. This tool does not verify signatures, runtime state, "
+        "node identity, or external-world truth.",
         file=sys.stderr,
     )
     return 0
